@@ -1,0 +1,1 @@
+const db = require('../db') //db 연결 객체
