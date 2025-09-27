@@ -7,5 +7,6 @@ router.post('/', auth, challengeController.insertChallenge);
 
 router.get('/', challengeController.getAllChallenges);
 router.get('/active', challengeController.getActiveChallenges);
+router.get('/:challNum', challengeController.getChallenge);
 
 module.exports = router;

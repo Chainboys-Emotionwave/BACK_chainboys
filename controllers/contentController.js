@@ -2,12 +2,27 @@ const contentService = require('../services/contentService');
 
 exports.getAllContents = async (req, res) => {
     try {
-        const contents = await contentService.getAllContents();
+        const sort = req.query.sort || 'latest'; 
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+        
+        if (limit > 50 || limit < 1) {
+            return res.status(400).json({ message: 'limit 값은 1에서 50 사이여야 합니다.' });
+        }
+        
+        // offset 값이 음수인지 확인합니다.
+        if (offset < 0) {
+            return res.status(400).json({ message: 'offset 값은 0 이상이어야 합니다.' });
+        }
+
+        const contents = await contentService.getAllContents({ sort, limit, offset });
         res.status(200).json(contents)
     } catch (error) {
         res.status(500).send(error.message);
     }
 };
+
+
 
 exports.getContent = async (req, res) => {
     try {
@@ -21,11 +36,11 @@ exports.getContent = async (req, res) => {
     } catch (error) {
         res.status(500).send('서버 오류 : ' + error.message);
     }
-}
+};
 
-exports.getContentwithCreatorId = async (req, res) => {
+exports.getContentsWithUserNum = async (req, res) => {
     try {
-        const contents = await contentService.getContentwithCreatorId(req.params.userNum);
+        const contents = await contentService.getContentsWithUserNum(req.params.userNum);
 
         if (!contents) { // 잘 검색을 했지만 반환 값이 0개 일때
             return res.status(404).send('콘텐츠를 찾을 수 없습니다.');
@@ -35,7 +50,54 @@ exports.getContentwithCreatorId = async (req, res) => {
     } catch (error) {
         res.status(500).send('서버 오류 : ' + error.message);
     }
-}
+};
+
+
+exports.getMyContents = async (req,res) => {
+    try {
+        const userNum = req.userData.userNum;
+        const contents = await contentService.getContentsWithUserNum(userNum);
+
+        if (!contents) { // 잘 검색을 했지만 반환 값이 0개 일때
+            return res.status(404).send('콘텐츠를 찾을 수 없습니다.');
+        }
+
+        res.status(200).json(contents);
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
+
+
+exports.getContentsWithChallNum = async (req, res) => {
+    try {
+        const contents = await contentService.getContentsWithChallNum(req.params.challNum);
+
+        if (!contents) { // 잘 검색을 했지만 반환 값이 0개 일때
+            return res.status(404).send('콘텐츠를 찾을 수 없습니다.');
+        }
+
+        res.status(200).json(contents);
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
+
+
+exports.getContentsWithCateNum = async (req, res) => {
+    try {
+        const contents = await contentService.getContentsWithCateNum(req.params.cateNum);
+
+        if (!contents) { // 잘 검색을 했지만 반환 값이 0개 일때
+            return res.status(404).send('콘텐츠를 찾을 수 없습니다.');
+        }
+
+        res.status(200).json(contents);
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
+
 
 exports.insertContent = async (req, res) => {
     try {

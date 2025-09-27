@@ -38,7 +38,7 @@ exports.getActiveChallenges = async (req, res) => {
 
 exports.getChallenge = async (req, res) => {
     try {
-        const challenge = await challengeService.getChallenge();
+        const challenge = await challengeService.getChallenge(req.params.challNum);
         if (!challenge) {
             res.status(404).send('챌린지를 찾을 수 없습니다.')
         }

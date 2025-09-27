@@ -1,13 +1,52 @@
 const db = require('../db') //db 연결 객체
 
-exports.findAllContents = async () => {
+
+exports.findAllContents = async ({ sort, limit, offset }) => {
     try {
-        const [rows] = await db.query('SELECT * FROM contents');
-        return rows;
+        let orderByClause;
+
+        switch (sort) {
+            case 'popular-supports':
+                // 응원 횟수가 많은 순서 (내림차순)
+                orderByClause = 'c.conSupports DESC';
+                break;
+            case 'popular-views':
+                // 응원 횟수가 많은 순서 (내림차순)
+                orderByClause = 'c.conViews DESC';
+                break;
+            case 'latest':
+            default:
+                // 생성일이 최신인 순서 (내림차순)
+                orderByClause = 'c.conDate DESC';
+                break;
+        }
+
+        // 2. 기본 쿼리 및 페이지네이션 설정
+        const sql = `
+            SELECT 
+                c.*, 
+                u.userName AS userName
+            FROM contents c
+            JOIN users u ON c.userNum = u.userNum
+            ORDER BY ${orderByClause}
+            LIMIT ? OFFSET ?;
+        `;
+        
+        // 3. 쿼리 실행
+        // limit과 offset은 항상 숫자로 전달되므로, ? 플레이스홀더를 사용해 SQL 인젝션을 방지합니다.
+        const [rows] = await db.query(sql, [limit, offset]);
+        
+        // 4. (선택적) 전체 콘텐츠 개수 조회 쿼리 (페이지네이션 UI 구성을 위해 필요)
+        const [totalRows] = await db.query('SELECT COUNT(conNum) AS totalCount FROM contents');
+        const totalCount = totalRows[0].totalCount;
+
+        return { contents: rows, totalCount };
     } catch (error) {
         throw new Error('콘텐츠 조회 실패 : ' + error.message);
     }
 };
+
+
 
 exports.incrementViews = async (conNum) => {
     try {
@@ -28,7 +67,7 @@ exports.findContent = async (conNum) => {
     }
 };
 
-exports.findContentwithCreatorId = async (userNum) => {
+exports.findContentsWithUserNum = async (userNum) => {
     try {
         const [rows] = await db.query('SELECT * FROM contents where userNum = ?', [userNum]);
         
@@ -41,6 +80,51 @@ exports.findContentwithCreatorId = async (userNum) => {
         throw new Error(`컨텐츠 조회 실패 : ${error.message}`);
     }
 };
+
+
+exports.findContentsWithChallNum = async (challNum) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM contents where challNum = ?', [challNum]);
+        
+        if (rows.length === 0) {
+            return null;
+        }
+
+        return rows;
+    } catch (error) {
+        throw new Error(`컨텐츠 조회 실패 : ${error.message}`);
+    }
+};
+
+exports.findContentsWithCateNum = async (cateNum) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM contents where cateNum = ?', [cateNum]);
+        
+        if (rows.length === 0) {
+            return null;
+        }
+
+        return rows;
+    } catch (error) {
+        throw new Error(`컨텐츠 조회 실패 : ${error.message}`);
+    }
+};
+
+
+exports.findContentsWithQuery = async (cateNum) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM contents where cateNum = ?', [cateNum]);
+        
+        if (rows.length === 0) {
+            return null;
+        }
+
+        return rows;
+    } catch (error) {
+        throw new Error(`컨텐츠 조회 실패 : ${error.message}`);
+    }
+};
+
 
 exports.insertContent = async (contentData) => {
     try {
