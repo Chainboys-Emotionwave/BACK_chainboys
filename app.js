@@ -17,13 +17,16 @@ const challRoutes = require('./routes/challengeRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 
-// CORS 설정 업데이트 (배포 환경 고려)
+// ✨ CORS 설정 수정 - 모든 도메인 허용 (개발/테스트용)
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] // 나중에 프론트엔드 도메인으로 변경
-    : ['http://localhost:3000', 'http://localhost:3001'], // 개발환경
-  credentials: true
+  origin: '*', // 모든 도메인 허용
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false // credentials를 false로 설정 (origin: '*'와 함께 사용)
 }));
+
+// Preflight 요청 처리
+app.options('*', cors());
 
 app.use(express.json());
 
