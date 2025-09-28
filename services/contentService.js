@@ -1,8 +1,19 @@
 const contentModel = require('../models/contentModel');
 
-exports.getAllContents = async (queryParams) => {
+exports.getAllContents = async ({ sort, limit, offset }) => {
     try {
-        const contents = await contentModel.findAllContents(queryParams);
+        if (limit > 50 || limit < 1) {
+            const error = new Error('limit 값은 1에서 50 사이여야 합니다.');
+            error.status = 400; 
+            throw error;
+        }
+        if (offset < 0) {
+            const error = new Error('offset 값은 0 이상이어야 합니다.');
+            error.status = 400; 
+            throw error;
+        }
+
+        const contents = await contentModel.findAllContents({ sort, limit, offset });
         return contents;
     } catch (error) {
         throw new Error('컨텐츠를 불러오는 데 실패했습니다.' + error.message);
@@ -78,5 +89,21 @@ exports.deleteContent = async (conNum, userNum) => {
         return isDeleted;
     } catch (error) {
         throw new Error(`컨텐츠 삭제 실패 : ${error.message}`);
+    }
+};
+
+exports.processSupport = async (supporterNum, conNum) => {
+    try {
+        const receiverNum = await contentModel.findContentUser(conNum);
+
+        if (supporterNum === receiverNum) {
+            const error = new Error('자신의 콘텐츠는 응원할 수 없습니다.');
+            error.status = 403; // Forbidden 상태 코드
+            throw error;
+        }
+
+        await contentModel.createSupportTransaction(supporterNum, conNum, receiverNum);
+    } catch (error) {
+        throw new Error(`응원 기록 실패 : ${error.message}`);
     }
 };
