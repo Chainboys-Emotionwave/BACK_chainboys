@@ -7,7 +7,6 @@ const swaggerSpec = require('./swagger');
 dotenv.config();
 
 const app = express()
-// Railway는 PORT 환경변수를 자동으로 설정
 const port = process.env.PORT || 3000;
 
 const authRoutes = require('./routes/authRoutes')
@@ -17,17 +16,27 @@ const challRoutes = require('./routes/challengeRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 
-// ✨ CORS 설정 수정 - 모든 도메인 허용 (개발/테스트용)
+// ✨ CORS 설정 - Swagger UI 호환성 개선
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(cors({
-  origin: '*', // 모든 도메인 허용
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false // credentials를 false로 설정 (origin: '*'와 함께 사용)
+  origin: true,
+  credentials: false
 }));
 
 app.use(express.json());
 
-// 기본 헬스체크 엔드포인트 추가
+// 기본 헬스체크 엔드포인트
 app.get('/', (req, res) => {
   res.json({ 
     message: 'K-POP 창작 플랫폼 API 서버가 정상 작동 중입니다!',
