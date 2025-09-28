@@ -6,15 +6,6 @@ exports.getAllContents = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
         
-        if (limit > 50 || limit < 1) {
-            return res.status(400).json({ message: 'limit 값은 1에서 50 사이여야 합니다.' });
-        }
-        
-        // offset 값이 음수인지 확인합니다.
-        if (offset < 0) {
-            return res.status(400).json({ message: 'offset 값은 0 이상이어야 합니다.' });
-        }
-
         const contents = await contentService.getAllContents({ sort, limit, offset });
         res.status(200).json(contents)
     } catch (error) {
@@ -156,5 +147,16 @@ exports.deleteContent = async (req, res) => {
         })
     } catch (error) {
         res.status(500).json({ message: '컨텐츠 삭제 중 서버 오류가 발생했습니다.', error: error.message });
+    }
+};
+
+
+exports.processSupport = async (req, res) => {
+    try {
+        const supporterNum = req.userData.userNum;
+        await contentService.processSupport(supporterNum, req.params.conNum);
+        res.status(200).send('성공적으로 응원이 등록되었습니다.');
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
     }
 }
