@@ -192,3 +192,55 @@ exports.deleteContent = async (conNum, userNum) => {
         throw new Error(`DB 삭제 오류: ${error.message}`);
     }
 };
+
+
+exports.findContentUser = async (conNum) => {
+    try {
+        const sql = `SELECT userNum FROM contents WHERE conNum = ?`;
+        const [rows] = await db.query(sql, [conNum]);
+
+        if (rows.length === 0) {
+            throw new Error('콘텐츠를 찾을 수 없습니다.');
+        }
+        return rows[0].userNum;
+    } catch (error) {
+        throw new Error(`DB 조회 오류: ${error.message}`);
+    }
+};
+
+
+exports.createSupportTransaction = async (supporterNum, conNum, receiverNum) => {
+    // 연결 객체를 db에서 빌려오기 (트랜잭션 시작을 위해 필수)
+    const connection = await db.getConnection();
+
+    try {
+        // 트랜잭션 시작
+        await connection.beginTransaction();
+
+        // supports 테이블에 INSERT (응원 기록 생성)
+        const insertSupportSql = `
+            INSERT INTO supports (supporterNum, conNum, receiverNum)
+            VALUES (?, ?, ?);
+        `;
+        await connection.query(insertSupportSql, [supporterNum, conNum, receiverNum]);
+
+        // contents 테이블의 conSupports 컬럼 1 증가 (집계 업데이트)
+        const updateContentSql = `
+            UPDATE contents
+            SET conSupports = conSupports + 1
+            WHERE conNum = ?;
+        `;
+        await connection.query(updateContentSql, [conNum]);
+
+        // 두 쿼리 모두 성공 시 트랜잭션 최종 확정
+        await connection.commit();
+
+    } catch (error) {
+        // 하나라도 실패 시 모든 변경 사항 취소 (롤백)
+        await connection.rollback();
+        throw error;
+    } finally {
+        // 사용한 연결을 풀로 반드시 반환
+        connection.release();
+    }
+};

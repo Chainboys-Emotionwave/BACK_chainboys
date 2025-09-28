@@ -12,6 +12,7 @@ router.get('/category/:cateNum', contentController.getContentsWithCateNum);
 
 // 로그인 해야 가능
 router.post('/', auth, contentController.insertContent);
+router.post('/:conNum/support',auth, contentController.processSupport);
 router.put('/:conNum', auth, contentController.updateContent);
 router.delete('/:conNum', auth, contentController.deleteContent);
 
