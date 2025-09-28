@@ -1,10 +1,11 @@
 {
   "name": "blockchain_project",
   "version": "1.0.0",
-  "description": "",
+  "description": "K-POP 창작 컨텐츠 유통 플랫폼 백엔드",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
     "dev": "nodemon app.js"
   },
   "keywords": [],
@@ -23,5 +24,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
