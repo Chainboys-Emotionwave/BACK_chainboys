@@ -16,7 +16,7 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'docs/swagger.yaml'));
 if (process.env.NODE_ENV === 'production') {
   swaggerDocument.servers = [
     {
-      url: 'https://your-actual-railway-url.up.railway.app', // 여기에 실제 Railway URL 입력
+      url: 'https://backchainboys-production.up.railway.app', // 여기에 실제 Railway URL 입력
       description: 'Production server'
     }
   ];
