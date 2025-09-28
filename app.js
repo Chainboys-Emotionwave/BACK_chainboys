@@ -25,9 +25,6 @@ app.use(cors({
   credentials: false // credentials를 false로 설정 (origin: '*'와 함께 사용)
 }));
 
-// Preflight 요청 처리
-app.options('*', cors());
-
 app.use(express.json());
 
 // 기본 헬스체크 엔드포인트 추가
