@@ -80,3 +80,55 @@ exports.findWeeklySupports = async (cateNum) => {
         throw new Error('DB 조회 실패 : ' + error.message);
     }
 };
+
+exports.findUserSupportStats = async (userNum) => {
+    try {
+        // 1. 사용자의 총 응원 수 조회
+        const [totalSupportsRows] = await db.query(
+            'SELECT COUNT(supNum) AS totalSupports FROM supports WHERE receiverNum = ?',
+            [userNum]
+        );
+        const totalSupports = totalSupportsRows[0].totalSupports;
+
+        // 2. 사용자의 주간 응원 수 조회
+        const [weeklySupportsRows] = await db.query(
+            'SELECT COUNT(supNum) AS weeklySupports FROM supports WHERE receiverNum = ? AND supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
+            [userNum]
+        );
+        const weeklySupports = weeklySupportsRows[0].weeklySupports;
+
+        // 3. 총 순위 조회 (전체 사용자 중에서 해당 사용자의 순위)
+        const [totalRankRows] = await db.query(`
+            SELECT ranking FROM (
+                SELECT receiverNum, COUNT(supNum) AS totalSupports,
+                       ROW_NUMBER() OVER (ORDER BY COUNT(supNum) DESC) as ranking
+                FROM supports
+                GROUP BY receiverNum
+            ) ranked_users
+            WHERE receiverNum = ?
+        `, [userNum]);
+        const totalRank = totalRankRows.length > 0 ? totalRankRows[0].ranking : null;
+
+        // 4. 주간 순위 조회 (주간 응원 수 기준)
+        const [weeklyRankRows] = await db.query(`
+            SELECT ranking FROM (
+                SELECT receiverNum, COUNT(supNum) AS weeklySupports,
+                       ROW_NUMBER() OVER (ORDER BY COUNT(supNum) DESC) as ranking
+                FROM supports
+                WHERE supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                GROUP BY receiverNum
+            ) ranked_users
+            WHERE receiverNum = ?
+        `, [userNum]);
+        const weeklyRank = weeklyRankRows.length > 0 ? weeklyRankRows[0].ranking : null;
+
+        return {
+            totalSupports,
+            weeklySupports,
+            totalRank,
+            weeklyRank
+        };
+    } catch (error) {
+        throw new Error('사용자 응원 통계 조회 실패 : ' + error.message);
+    }
+};

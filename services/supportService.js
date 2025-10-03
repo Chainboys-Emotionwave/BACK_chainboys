@@ -29,3 +29,12 @@ exports.getWeeklySupports = async (cateNum) => {
         throw new Error("주간 응원 조회 실패 : " + error.message);
     }
 };
+
+exports.getUserSupportStats = async (userNum) => {
+    try {
+        const userStats = await supportModel.findUserSupportStats(userNum);
+        return userStats;
+    } catch (error) {
+        throw new Error("사용자 응원 통계 조회 실패 : " + error.message);
+    }
+};
