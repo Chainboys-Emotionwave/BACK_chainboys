@@ -81,6 +81,136 @@ exports.findWeeklySupports = async (cateNum) => {
     }
 };
 
+// 블록체인 기록을 위한 응원 데이터 조회
+exports.getSupportsForBlockchain = async (fromDate) => {
+    try {
+        const sql = `
+            SELECT 
+                s.supNum,
+                s.conNum,
+                s.supporterNum,
+                s.receiverNum,
+                s.supDate,
+                u.userWalletAddress as supporterWalletAddress
+            FROM supports s
+            JOIN users u ON s.supporterNum = u.userNum
+            WHERE s.supDate >= ? AND s.blockchainTxHash IS NULL
+            ORDER BY s.supDate ASC
+        `;
+        const [rows] = await db.query(sql, [fromDate]);
+        return rows;
+    } catch (error) {
+        throw new Error('블록체인용 응원 데이터 조회 실패 : ' + error.message);
+    }
+};
+
+// 특정 콘텐츠의 응원 데이터 조회 (블록체인용)
+exports.getSupportsByContentForBlockchain = async (conNum) => {
+    try {
+        const sql = `
+            SELECT 
+                s.supNum,
+                s.conNum,
+                s.supporterNum,
+                s.receiverNum,
+                s.supDate,
+                u.userWalletAddress as supporterWalletAddress
+            FROM supports s
+            JOIN users u ON s.supporterNum = u.userNum
+            WHERE s.conNum = ? AND s.blockchainTxHash IS NULL
+            ORDER BY s.supDate ASC
+        `;
+        const [rows] = await db.query(sql, [conNum]);
+        return rows;
+    } catch (error) {
+        throw new Error('콘텐츠별 블록체인용 응원 데이터 조회 실패 : ' + error.message);
+    }
+};
+
+// 특정 기간의 응원 데이터 조회 (블록체인용)
+exports.getSupportsByPeriod = async (startDate, endDate) => {
+    try {
+        const sql = `
+            SELECT 
+                s.supNum,
+                s.conNum,
+                s.supporterNum,
+                s.receiverNum,
+                s.supDate,
+                u.userWalletAddress as supporterWalletAddress
+            FROM supports s
+            JOIN users u ON s.supporterNum = u.userNum
+            WHERE s.supDate >= ? AND s.supDate <= ? AND s.blockchainTxHash IS NULL
+            ORDER BY s.supDate ASC
+        `;
+        const [rows] = await db.query(sql, [startDate, endDate]);
+        return rows;
+    } catch (error) {
+        throw new Error('기간별 블록체인용 응원 데이터 조회 실패 : ' + error.message);
+    }
+};
+
+// 응원 블록체인 정보 업데이트
+exports.updateSupportsBlockchainInfo = async (supNums, blockchainInfo) => {
+    try {
+        const sql = `
+            UPDATE supports 
+            SET 
+                blockchainTxHash = ?,
+                blockchainBlockNumber = ?,
+                blockchainRecordedAt = ?
+            WHERE supNum IN (${supNums.map(() => '?').join(',')})
+        `;
+        const values = [
+            blockchainInfo.txHash,
+            blockchainInfo.blockNumber,
+            blockchainInfo.recordedAt,
+            ...supNums
+        ];
+
+        const [result] = await db.query(sql, values);
+        return result.affectedRows > 0;
+    } catch (error) {
+        throw new Error('응원 블록체인 정보 업데이트 실패 : ' + error.message);
+    }
+};
+
+// 특정 콘텐츠의 응원 데이터 조회
+exports.getSupportsByContent = async (conNum) => {
+    try {
+        const sql = `
+            SELECT 
+                s.*,
+                u.userWalletAddress as supporterWalletAddress
+            FROM supports s
+            JOIN users u ON s.supporterNum = u.userNum
+            WHERE s.conNum = ?
+            ORDER BY s.supDate DESC
+        `;
+        const [rows] = await db.query(sql, [conNum]);
+        return rows;
+    } catch (error) {
+        throw new Error('콘텐츠별 응원 데이터 조회 실패 : ' + error.message);
+    }
+};
+
+// 블록체인 기록 상태 조회
+exports.getBlockchainRecordStatus = async () => {
+    try {
+        const sql = `
+            SELECT 
+                COUNT(*) as totalSupports,
+                COUNT(blockchainTxHash) as recordedSupports,
+                COUNT(*) - COUNT(blockchainTxHash) as unrecordedSupports
+            FROM supports
+        `;
+        const [rows] = await db.query(sql);
+        return rows[0];
+    } catch (error) {
+        throw new Error('블록체인 기록 상태 조회 실패 : ' + error.message);
+    }
+};
+
 exports.findUserSupportStats = async (userNum) => {
     try {
         // 1. 사용자의 총 응원 수 조회
