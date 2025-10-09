@@ -1,11 +1,9 @@
 # 블록체인 K-POP 창작 컨텐츠 유통 플랫폼 (백엔드)
-
 ## 환경 설정
-
 node.js v22.19.0
 
-### Mac 설치 방법
-```Bash
+## Mac 설치 방법
+```
 # Download and install nvm:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 # in lieu of restarting the shell
@@ -17,12 +15,11 @@ node -v # Should print "v22.19.0".
 # Verify npm version:
 npm -v # Should print "10.9.3".
 ```
-
-### Windows 설치 방법
+## Windows 설치 방법
 https://nodejs.org/en/download 에 접속하여 아래 설치 파일을 다운로드
 
-## 서버 실행
-```Bash
+서버 실행
+```
 npm run dev
 ```
 Bash 혹은 console에 위 명령어를 통해서 실행가능
@@ -31,4 +28,19 @@ Bash 혹은 console에 위 명령어를 통해서 실행가능
 http://localhost:3000/api-docs/
 
 ## 테스트 위한 jwt 토큰 받기
-`node test_login_flow` 로 실행
+node test_login_flow 로 실행
+
+
+# Sample Hardhat Project
+
+This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+
+Try running some of the following tasks:
+
+```shell
+npx hardhat help
+npx hardhat test
+REPORT_GAS=true npx hardhat test
+npx hardhat node
+npx hardhat ignition deploy ./ignition/modules/Lock.js
+```

@@ -17,6 +17,16 @@ CREATE TABLE category (
   cateName  VARCHAR(100) NOT NULL UNIQUE
 );
 
+-- 챌린지
+CREATE TABLE challenges (
+  challNum       INT AUTO_INCREMENT PRIMARY KEY,
+  challName      VARCHAR(255) NOT NULL,
+  challStartDate DATETIME NOT NULL,
+  challEndDate   DATETIME NOT NULL,
+  challPrize     INT NULL,  -- FK 
+  challDescription TEXT
+);
+
 -- 콘텐츠
 CREATE TABLE contents (
   conNum         INT AUTO_INCREMENT PRIMARY KEY,
@@ -66,15 +76,7 @@ CREATE TABLE supports (
   -- , UNIQUE KEY uk_support_once (supporterNum, conNum)
 );
 
--- 챌린지
-CREATE TABLE challenges (
-  challNum       INT AUTO_INCREMENT PRIMARY KEY,
-  challName      VARCHAR(255) NOT NULL,
-  challStartDate DATETIME NOT NULL,
-  challEndDate   DATETIME NOT NULL,
-  challPrize     INT NULL,  -- FK 
-  challDescription TEXT
-);
+
 
 -- 광고 시청 기록
 CREATE TABLE adViews (
@@ -113,5 +115,15 @@ CREATE TABLE userBadges (
     FOREIGN KEY (badgesNum) REFERENCES badges(badgesNum) ON DELETE CASCADE
 );
 
+ALTER TABLE supports ADD COLUMN blockchainTxHash VARCHAR(66);
+ALTER TABLE supports ADD COLUMN blockchainBlockNumber BIGINT;
+ALTER TABLE supports ADD COLUMN blockchainRecordedAt TIMESTAMP NULL;
 
+ALTER TABLE challenges ADD COLUMN blockchainTxHash VARCHAR(66);
+ALTER TABLE challenges ADD COLUMN blockchainBlockNumber BIGINT;
+ALTER TABLE challenges ADD COLUMN distributionTxHash VARCHAR(66);
+ALTER TABLE challenges ADD COLUMN distributionBlockNumber BIGINT;
+ALTER TABLE challenges ADD COLUMN prizeDistribution JSON;
+ALTER TABLE challenges ADD COLUMN blockchainStatus ENUM('created', 'distributed', 'failed') DEFAULT 'created';
+ALTER TABLE challenges ADD COLUMN distributedAt TIMESTAMP NULL;
 

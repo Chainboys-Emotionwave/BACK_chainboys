@@ -684,3 +684,121 @@ console.log(`처리 시간: ${endTime - startTime}ms`);
 이 문서는 블록체인 기능의 구현과 사용법을 종합적으로 다루고 있으며, 실제 운영 환경에서의 안정적인 서비스 제공을 위한 가이드라인을 제공합니다.
 
 
+
+---
+
+## 🆕 추가 구현: Challenge.sol / Support.sol
+
+### 개요
+최근 이슈(ABI 불일치, 이벤트 미발행, 뷰 함수 부재)를 해결하기 위해 두 개의 핵심 스마트 컨트랙트를 새로 추가했습니다.
+
+- `contracts/Challenge.sol` (Solidity ^0.8.24): 챌린지 상금 예치/분배 관리
+- `contracts/Support.sol` (Solidity ^0.8.24): 응원 기록의 배치 저장 및 히스토리 조회
+- `scripts/deploy.js`: 두 컨트랙트 동시 배포 스크립트 (Hardhat, Ethers v6)
+
+두 컨트랙트는 Hardhat 설정(`hardhat.config.js`의 `solidity: "0.8.24"`)과 맞추어 컴파일됩니다.
+
+---
+
+### Challenge.sol: 기능 및 구현
+- **상태 구조**: `challengeId => { creator, prizeAmount, distributedAmount, active }`
+- **핵심 함수**
+  - `createChallenge(uint256 challengeId, uint256 prizeAmount)`
+    - `msg.value`와 `prizeAmount`가 동일해야 하며, 컨트랙트에 상금이 에스크로됩니다.
+    - 동일 `challengeId` 재생성 방지.
+    - 이벤트 `ChallengeCreated` 발생.
+  - `distributePrize(uint256 challengeId, address[] winners, uint256[] amounts)`
+    - 오직 `creator`만 호출 가능.
+    - 합계가 남은 상금 한도를 초과하면 실패.
+    - 각 수상자에게 ETH 전송(Checks-Effects-Interactions 순서 적용).
+    - 전액 분배 시 `active=false` 처리.
+    - 이벤트 `PrizeDistributed` 발생.
+  - `getChallengeInfo(uint256 challengeId)`
+    - `(creator, prizeAmount, distributedAmount, active)` 반환.
+
+- **이벤트**
+  - `ChallengeCreated(uint256 indexed challengeId, address indexed creator, uint256 prizeAmount)`
+  - `PrizeDistributed(uint256 indexed challengeId, address[] winners, uint256[] amounts)`
+
+- **API 연계**
+  - `POST /api/blockchain/challenge/:challNum/deposit` → `createChallenge(challNum, prizeAmount)` 호출, `value`로 상금 전달
+  - `POST /api/blockchain/challenge/:challNum/distribute` → `distributePrize(challNum, winners, amounts)` 호출
+  - `GET /api/blockchain/challenge/:challNum/info` → `getChallengeInfo(challNum)` 조회
+
+---
+
+### Support.sol: 기능 및 구현
+- **상태 구조**: `contentId => { supporters[], amounts[], timestamps[] }`
+- **핵심 함수**
+  - `recordSupports(uint256[] contentIds, address[] supporters, uint256[] amounts, uint256 timestamp)`
+    - 동일 길이의 배열 배치 입력을 검증 후, 각 인덱스의 레코드를 해당 `contentId` 버킷에 저장.
+    - 이벤트 `SupportsRecorded`를 정확히 발행(배치 전체의 입력을 이벤트에 포함).
+  - `getSupportHistory(uint256 contentId)`
+    - `(supporters[], amounts[], timestamps[])`를 그대로 반환.
+
+- **이벤트**
+  - `SupportsRecorded(uint256[] contentIds, address[] supporters, uint256[] amounts, uint256 timestamp)`
+
+- **API 연계**
+  - `POST /api/blockchain/supports/record-hourly` 및 `POST /api/blockchain/supports/batch` → `recordSupports(...)` 호출
+  - `GET /api/blockchain/supports/history/:conNum` → `getSupportHistory(conNum)` 조회
+  - `GET /api/blockchain/events?type=support` → `SupportsRecorded` 이벤트 필터로 조회
+
+---
+
+### 문제 해결 요약 (근본 원인 → 조치)
+- **GET /supports/history/:conNum 실패 ("could not decode result data")**
+  - 원인: 컨트랙트에 `getSupportHistory` 미구현 또는 잘못된 주소/ABI.
+  - 조치: `Support.sol`에 `getSupportHistory` 구현 및 정확한 반환 시그니처 제공. 배포 주소 업데이트 필요.
+
+- **GET /events?type=support 시 `data: []`**
+  - 원인: 배치 기록 함수에서 이벤트 미발행 또는 이벤트 시그니처 불일치.
+  - 조치: `SupportsRecorded(...)` 이벤트를 `recordSupports` 내에서 정확히 발행.
+
+- **챌린지 분배 관련 주소/에러**
+  - 조치: `Challenge.sol`에 예치/분배 로직을 명확히 구현하고, `creator` 권한 및 금액 합산 검증 추가.
+
+---
+
+### 배포와 주소 설정
+- 배포 스크립트: `scripts/deploy.js`
+  - Ethers v6 기준 배포 후 주소는 `contract.target`로 접근.
+  - 두 컨트랙트 모두 배포하며, 콘솔에 주소 출력.
+- 환경변수(.env) 예시
+  - `CHALLENGE_CONTRACT_ADDRESS=0x...`
+  - `SUPPORT_CONTRACT_ADDRESS=0x...`
+- 서버에서 사용
+  - `config/blockchain.js` 또는 관련 서비스들이 위 주소를 사용해 인스턴스 생성.
+
+---
+
+### Ethers.js v6 통합 주의사항 (백엔드 서비스 연계)
+- 컨트랙트 팩토리: `await hre.ethers.getContractFactory("Challenge")`
+- 배포 대기: `await contract.waitForDeployment()`
+- 주소 접근: `contract.target`
+- 함수 호출 예시
+  - 응원 기록 배치:
+    ```javascript
+    await supportContract.recordSupports(contentIds, supporters, amounts, timestamp);
+    ```
+  - 응원 히스토리 조회:
+    ```javascript
+    const [supporters, amounts, timestamps] = await supportContract.getSupportHistory(conNum);
+    ```
+  - 챌린지 예치:
+    ```javascript
+    await challengeContract.createChallenge(challNum, prizeAmount, { value: prizeAmount });
+    ```
+  - 챌린지 분배:
+    ```javascript
+    await challengeContract.distributePrize(challNum, winners, amounts);
+    ```
+
+---
+
+### 보안/운영 체크리스트
+- `createChallenge` 시 `msg.value == prizeAmount` 검증 필수.
+- `distributePrize`는 생성자(`creator`)만 호출 가능.
+- 이벤트 인덱싱: `challengeId`는 `indexed`로 이벤트 필터링 최적화.
+- 배치 입력 시 길이 불일치 방지(`length mismatch` 검사).
+- 배포 후 주소를 `.env` 및 `config/blockchain.js`에 정확히 반영.

@@ -44,6 +44,7 @@ exports.findActiveChallenges = async () => {
 exports.findChallenge = async (challNum) => {
     try {
         const [rows] = await db.query('SELECT * FROM challenges WHERE challNum = ?',[challNum]);
+        console.log(rows[0]);
         return rows[0] || null;
     } catch (error) {
         throw new Error('DB 조회 오류 : ' + error.message);

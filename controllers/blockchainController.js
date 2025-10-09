@@ -20,14 +20,15 @@ exports.getBlockchainStatus = async (req, res) => {
 // 챌린지 상금 예치
 exports.depositChallengePrize = async (req, res) => {
     try {
-        const { challNum, prizeDistribution } = req.body;
+        const { challNum } = req.params;
+        const { prizeDistribution } = req.body;
         const role = req.userData.role;
         
         if (role !== 'admin') {
             return res.status(403).send('관리자만 상금을 예치할 수 있습니다.');
         }
 
-        const challenge = await challengeModel.getChallenge(challNum);
+        const challenge = await challengeModel.findChallenge(challNum);
         if (!challenge) {
             return res.status(404).send('챌린지를 찾을 수 없습니다.');
         }
