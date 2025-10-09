@@ -1,3 +1,5 @@
+const { ethers } = require('ethers');
+
 const { 
     getProvider, 
     getAdminWallet, 
