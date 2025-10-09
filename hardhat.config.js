@@ -10,7 +10,7 @@ require("@nomicfoundation/hardhat-toolbox");
 require('dotenv').config({ path: __dirname + '/.env' }); // .env 파일 로드
 
 module.exports = {
-  solidity: "0.8.24", // 컨트랙트 솔리디티 버전에 맞게 수정
+  solidity: "0.8.28", // 컨트랙트 솔리디티 버전에 맞게 수정
   networks: {
     // 로컬 백엔드 서버에서 사용할 Hardhat 노드 설정
     localhost: {

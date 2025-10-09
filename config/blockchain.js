@@ -47,7 +47,7 @@ const getAdminWallet = () => {
 const CHALLENGE_CONTRACT_ABI = [
     "function createChallenge(uint256 challengeId, uint256 prizeAmount) external",
     "function distributePrize(uint256 challengeId, address[] memory winners, uint256[] memory amounts) external",
-    "function getChallengeInfo(uint256 challengeId) external view returns (uint256, address, uint256, bool)",
+    "function getChallengeInfo(uint256 challengeId) external view returns (address, uint256, uint256, bool)", 
     "function getChallengeParticipants(uint256 challengeId) external view returns (address[] memory)",
     "event ChallengeCreated(uint256 indexed challengeId, address indexed creator, uint256 prizeAmount)",
     "event PrizeDistributed(uint256 indexed challengeId, address[] winners, uint256[] amounts)"

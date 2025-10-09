@@ -100,12 +100,14 @@ class SupportBlockchainService {
                     const supports = await supportModel.getSupportsByContentForBlockchain(conNum);
 
                     if (supports && supports.length > 0) {
+                        const contentIds = supports.map(s => s.conNum);
+                        
                         const supporters = supports.map(s => s.supporterWalletAddress);
                         const amounts = supports.map(() => 1);
                         const timestamp = Math.floor(Date.now() / 1000);
 
                         const tx = await this.contract.recordSupports(
-                            [conNum],
+                            contentIds, // 👈 수정: 길이가 N인 배열을 전달합니다.
                             supporters,
                             amounts,
                             timestamp,

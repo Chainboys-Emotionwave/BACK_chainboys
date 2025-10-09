@@ -170,11 +170,23 @@ class ChallengeBlockchainService {
     async getChallengeBlockchainInfo(challNum) {
         try {
             const challengeInfo = await this.contract.getChallengeInfo(challNum);
+            
+            // 🚨 반환되는 배열의 인덱스에 맞춰 변수명을 수정합니다.
+            const creator = challengeInfo[0];
+            const prizeAmount = challengeInfo[1]; // 총 예치된 상금 (uint256)
+            const distributedAmount = challengeInfo[2]; // 분배된 상금 (uint256)
+            const active = challengeInfo[3]; // 활성화 상태 (bool)
+
             return {
-                challengeId: challengeInfo[0].toString(),
-                creator: challengeInfo[1],
-                prizeAmount: ethers.formatEther(challengeInfo[2]),
-                isDistributed: challengeInfo[3]
+                // challengeId는 실제로 DB의 challNum을 사용하고, 
+                // 블록체인에서는 creator 주소가 첫 번째 요소입니다.
+                creator: creator,
+                // 총 상금: prizeAmount가 두 번째 요소 (index 1)입니다.
+                prizeAmount: ethers.formatEther(prizeAmount),
+                // 분배 여부: isDistributed 대신 active 상태를 사용하고, 
+                // 서비스의 출력 구조에 맞춰 key를 재정의합니다.
+                isDistributed: !active || (prizeAmount === distributedAmount), // active가 false거나 상금이 모두 분배되었으면 true로 가정
+                active: active
             };
         } catch (error) {
             throw new Error(`챌린지 블록체인 정보 조회 실패: ${error.message}`);
