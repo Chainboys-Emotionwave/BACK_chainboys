@@ -24,3 +24,7 @@ select * from category;
 select * from supports;
 
 select * from users;
+
+select * from adViews;
+
+select * from rewards;

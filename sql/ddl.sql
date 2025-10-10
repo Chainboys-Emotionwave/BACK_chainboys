@@ -104,7 +104,8 @@ CREATE TABLE rewards (
 CREATE TABLE badges (
   badgesNum    INT AUTO_INCREMENT PRIMARY KEY,
   badgesName   VARCHAR(100) NOT NULL UNIQUE,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  badgesDescription varchar(255) DEFAULT NULL
 );
 
 CREATE TABLE userBadges (
