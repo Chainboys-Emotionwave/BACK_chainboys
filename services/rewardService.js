@@ -1,5 +1,6 @@
 const rewardModel = require('../models/rewardModel');
 const userModel = require('../models/userModel');
+const authModel = require('../models/authModel');
 
 class RewardService {
     // 챌린지 상금 분배 시 보상 기록 생성
@@ -18,7 +19,7 @@ class RewardService {
                 const amountWei = amounts[i];
                 
                 // 지갑 주소로 사용자 정보 조회
-                const user = await userModel.findByWalletAddress(walletAddress);
+                const user = await authModel.findByWalletAddress(walletAddress);
                 if (!user) {
                     console.warn(`지갑 주소 ${walletAddress}에 해당하는 사용자를 찾을 수 없습니다.`);
                     continue;

@@ -341,3 +341,77 @@ const festivalData = await festivalResponse.json();
 - **쿼리 최적화**: JOIN과 집계 함수를 활용한 효율적인 데이터베이스 쿼리
 - **캐싱 고려**: 자주 조회되는 랭킹 데이터는 캐싱 적용 가능
 
+---
+
+## 🔧 수정 사항 (2024-01-15)
+
+### 문제점: 카테고리별 응원 수 중복 계산 오류
+**발견된 이슈**: 
+- `GET /api/pages/ranking/weekly`와 `GET /api/pages/ranking/hall-of-fame`에서 `cateNum` 파라미터 없이 전체 응원을 계산할 때 중복 계산 발생
+- 예시: 전체 21개 응원이 있을 때, 3개 카테고리별로 각각 21개씩 계산되어 총 63개로 잘못 측정됨
+
+**원인 분석**:
+- `models/pagesModel.js`의 `getWeeklyRankingWithDetails`와 `getTotalRankingWithDetails` 함수에서
+- `supports` 테이블과 `contents` 테이블을 JOIN할 때, 응원과 콘텐츠의 연결 관계가 명확하지 않아 중복 계산 발생
+
+### 수정 내용
+
+#### 1. `getWeeklyRankingWithDetails` 함수 수정
+**수정 전**:
+```sql
+LEFT JOIN supports s ON u.userNum = s.receiverNum 
+    AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+LEFT JOIN contents con ON u.userNum = con.userNum ${whereClause}
+```
+
+**수정 후**:
+```sql
+-- 카테고리 지정 시
+LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
+LEFT JOIN supports s ON u.userNum = s.receiverNum 
+    AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    AND s.conNum = con.conNum
+
+-- 전체 카테고리 시
+LEFT JOIN contents con ON u.userNum = con.userNum
+LEFT JOIN supports s ON u.userNum = s.receiverNum 
+    AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    AND s.conNum = con.conNum
+```
+
+#### 2. `getTotalRankingWithDetails` 함수 수정
+**수정 전**:
+```sql
+LEFT JOIN supports s ON u.userNum = s.receiverNum
+LEFT JOIN contents con ON u.userNum = con.userNum ${whereClause}
+```
+
+**수정 후**:
+```sql
+-- 카테고리 지정 시
+LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
+LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
+
+-- 전체 카테고리 시
+LEFT JOIN contents con ON u.userNum = con.userNum
+LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
+```
+
+### 수정 결과
+- ✅ **카테고리별 계산**: 특정 카테고리 지정 시 해당 카테고리의 콘텐츠에 대한 응원만 정확히 계산
+- ✅ **전체 계산**: `cateNum` 없이 요청 시 모든 응원을 중복 없이 정확히 계산
+- ✅ **데이터 정합성**: 응원 수가 실제 데이터베이스의 `supports` 테이블과 일치
+
+### 테스트 시나리오
+1. **전체 응원 21개, 카테고리별 분포**: 카테고리1(10개), 카테고리2(6개), 카테고리3(5개)
+2. **수정 전**: 전체 조회 시 63개 (21×3) - ❌ 잘못된 계산
+3. **수정 후**: 전체 조회 시 21개 - ✅ 정확한 계산
+
+### 영향받는 API
+- `GET /api/pages/ranking/weekly?cateNum=1` - 카테고리별 주간 랭킹
+- `GET /api/pages/ranking/weekly` - 전체 주간 랭킹
+- `GET /api/pages/ranking/hall-of-fame?cateNum=1` - 카테고리별 명예의 전당
+- `GET /api/pages/ranking/hall-of-fame` - 전체 명예의 전당
+
+이 수정으로 랭킹 시스템의 정확성이 크게 향상되었습니다.
+

@@ -11,7 +11,7 @@ class RewardModel {
                 VALUES (?, ?, NOW())
             `;
             
-            const [result] = await db.execute(query, [userNum, rewardAmount]);
+            const [result] = await db.query(query, [userNum, rewardAmount]);
             return result.insertId;
         } catch (error) {
             throw new Error(`보상 기록 생성 실패: ${error.message}`);
@@ -30,10 +30,10 @@ class RewardModel {
                 FROM rewards 
                 WHERE userNum = ?
                 ORDER BY rewardTime DESC
-                LIMIT ? OFFSET ?
+                LIMIT ${limit} OFFSET ${offset}
             `;
             
-            const [rows] = await db.execute(query, [userNum, limit, offset]);
+            const [rows] = await db.query(query, [userNum]);
             return rows;
         } catch (error) {
             throw new Error(`사용자 보상 기록 조회 실패: ${error.message}`);
@@ -50,7 +50,7 @@ class RewardModel {
                 WHERE userNum = ?
             `;
             
-            const [rows] = await db.execute(query, [userNum]);
+            const [rows] = await db.query(query, [userNum]);
             return rows[0].totalReward;
         } catch (error) {
             throw new Error(`사용자 총 보상 금액 조회 실패: ${error.message}`);
@@ -69,7 +69,7 @@ class RewardModel {
                 FROM rewards
             `;
             
-            const [rows] = await db.execute(query);
+            const [rows] = await db.query(query);
             return rows[0];
         } catch (error) {
             throw new Error(`보상 통계 조회 실패: ${error.message}`);
@@ -91,10 +91,10 @@ class RewardModel {
                 JOIN users u ON r.userNum = u.userNum
                 WHERE r.rewardTime BETWEEN ? AND ?
                 ORDER BY r.rewardTime DESC
-                LIMIT ? OFFSET ?
+                LIMIT ${limit} OFFSET ${offset}  // 👈 LIMIT/OFFSET 직접 삽입
             `;
             
-            const [rows] = await db.execute(query, [startDate, endDate, limit, offset]);
+            const [rows] = await db.query(query, [startDate, endDate]);
             return rows;
         } catch (error) {
             throw new Error(`기간별 보상 기록 조회 실패: ${error.message}`);
@@ -113,7 +113,7 @@ class RewardModel {
                 VALUES (?, ?, NOW())
             `;
             
-            const [result] = await db.execute(query, [userNum, rewardAmount]);
+            const [result] = await db.query(query, [userNum, rewardAmount]);
             return result.insertId;
         } catch (error) {
             throw new Error(`챌린지 보상 기록 생성 실패: ${error.message}`);

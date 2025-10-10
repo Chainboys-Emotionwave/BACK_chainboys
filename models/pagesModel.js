@@ -145,32 +145,54 @@ exports.getCategoryStats = async () => {
 // 주간 랭킹 상세 조회 (프로필 정보 포함)
 exports.getWeeklyRankingWithDetails = async (limit, cateNum) => {
     try {
-        let whereClause = '';
-        let queryParams = [limit];
+        let sql, queryParams;
 
         if (cateNum) {
-            whereClause = 'AND con.cateNum = ?';
-            queryParams.unshift(cateNum);
+            // 카테고리가 지정된 경우: 해당 카테고리의 콘텐츠에 대한 응원만 계산
+            sql = `
+                SELECT 
+                    u.userNum,
+                    u.userName,
+                    u.profileImageNum,
+                    u.profileImageBackNum,
+                    COUNT(s.supNum) AS weeklySupports,
+                    COUNT(DISTINCT con.conNum) AS contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                FROM users u
+                LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
+                LEFT JOIN supports s ON u.userNum = s.receiverNum 
+                    AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    AND s.conNum = con.conNum
+                GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
+                HAVING COUNT(s.supNum) > 0
+                ORDER BY weeklySupports DESC
+                LIMIT ?
+            `;
+            queryParams = [cateNum, limit];
+        } else {
+            // 전체 카테고리: 모든 응원 계산
+            sql = `
+                SELECT 
+                    u.userNum,
+                    u.userName,
+                    u.profileImageNum,
+                    u.profileImageBackNum,
+                    COUNT(s.supNum) AS weeklySupports,
+                    COUNT(DISTINCT con.conNum) AS contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                FROM users u
+                LEFT JOIN contents con ON u.userNum = con.userNum
+                LEFT JOIN supports s ON u.userNum = s.receiverNum 
+                    AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    AND s.conNum = con.conNum
+                GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
+                HAVING COUNT(s.supNum) > 0
+                ORDER BY weeklySupports DESC
+                LIMIT ?
+            `;
+            queryParams = [limit];
         }
 
-        const sql = `
-            SELECT 
-                u.userNum,
-                u.userName,
-                u.profileImageNum,
-                u.profileImageBackNum,
-                COUNT(s.supNum) AS weeklySupports,
-                COUNT(DISTINCT con.conNum) AS contentCount,
-                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
-            FROM users u
-            LEFT JOIN supports s ON u.userNum = s.receiverNum 
-                AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            LEFT JOIN contents con ON u.userNum = con.userNum ${whereClause}
-            GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
-            HAVING COUNT(s.supNum) > 0
-            ORDER BY weeklySupports DESC
-            LIMIT ?
-        `;
         const [rows] = await db.query(sql, queryParams);
         return rows;
     } catch (error) {
@@ -181,31 +203,50 @@ exports.getWeeklyRankingWithDetails = async (limit, cateNum) => {
 // 전체 랭킹 상세 조회 (프로필 정보 포함)
 exports.getTotalRankingWithDetails = async (limit, cateNum) => {
     try {
-        let whereClause = '';
-        let queryParams = [limit];
+        let sql, queryParams;
 
         if (cateNum) {
-            whereClause = 'AND con.cateNum = ?';
-            queryParams.unshift(cateNum);
+            // 카테고리가 지정된 경우: 해당 카테고리의 콘텐츠에 대한 응원만 계산
+            sql = `
+                SELECT 
+                    u.userNum,
+                    u.userName,
+                    u.profileImageNum,
+                    u.profileImageBackNum,
+                    COUNT(s.supNum) AS totalSupports,
+                    COUNT(DISTINCT con.conNum) AS contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                FROM users u
+                LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
+                LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
+                GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
+                HAVING COUNT(s.supNum) > 0
+                ORDER BY totalSupports DESC
+                LIMIT ?
+            `;
+            queryParams = [cateNum, limit];
+        } else {
+            // 전체 카테고리: 모든 응원 계산
+            sql = `
+                SELECT 
+                    u.userNum,
+                    u.userName,
+                    u.profileImageNum,
+                    u.profileImageBackNum,
+                    COUNT(s.supNum) AS totalSupports,
+                    COUNT(DISTINCT con.conNum) AS contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                FROM users u
+                LEFT JOIN contents con ON u.userNum = con.userNum
+                LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
+                GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
+                HAVING COUNT(s.supNum) > 0
+                ORDER BY totalSupports DESC
+                LIMIT ?
+            `;
+            queryParams = [limit];
         }
 
-        const sql = `
-            SELECT 
-                u.userNum,
-                u.userName,
-                u.profileImageNum,
-                u.profileImageBackNum,
-                COUNT(s.supNum) AS totalSupports,
-                COUNT(DISTINCT con.conNum) AS contentCount,
-                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
-            FROM users u
-            LEFT JOIN supports s ON u.userNum = s.receiverNum
-            LEFT JOIN contents con ON u.userNum = con.userNum ${whereClause}
-            GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
-            HAVING COUNT(s.supNum) > 0
-            ORDER BY totalSupports DESC
-            LIMIT ?
-        `;
         const [rows] = await db.query(sql, queryParams);
         return rows;
     } catch (error) {
