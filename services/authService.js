@@ -1,4 +1,5 @@
 const authModel = require('../models/authModel');
+const badgeService = require('./badgeService'); // 뱃지 서비스 추가
 const ethers = require('ethers');
 const jwt = require('jsonwebtoken');
 
@@ -12,7 +13,9 @@ exports.generateSignatureMessage = async (userWalletAddress) => {
 
     if(!user) {
         userNonce = Math.random().toString(36).substring(2,15);
-        await authModel.createUser(userWalletAddress, userNonce);
+        const newUser = await authModel.createUser(userWalletAddress, userNonce);
+        // 새로운 사용자에게 초기 뱃지 부여
+        await badgeService.grantInitialBadge(newUser.id);
     } else {
         userNonce = user.userNonce;
     }

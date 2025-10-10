@@ -15,6 +15,7 @@ exports.createUser = async (userWalletAddress, userNonce) => {
         'INSERT INTO users(userWalletAddress, userName, userNonce) VALUES (?, ?, ?)',
         [userWalletAddress, userWalletAddress.substring(3,10), userNonce]
     );
+    return { id: result.insertId };
 };
 
 

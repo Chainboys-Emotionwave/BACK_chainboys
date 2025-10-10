@@ -17,6 +17,8 @@ tags:
     description: 콘텐츠 생성, 조회, 수정, 삭제 및 응원 관련 API
   - name: 챌린지
     description: 챌린지 생성 및 조회 관련 API
+  - name: 뱃지
+    description: 뱃지 조회 및 관리 API
   - name: 검색
     description: 사용자 및 콘텐츠 검색 관련 API
   - name: 응원 통계
@@ -137,6 +139,37 @@ components:
           type: integer
           description: 변경할 배경 이미지 번호
           example: 5
+
+    # === 뱃지 스키마 ===
+    Badge:
+      type: object
+      properties:
+        badgesNum:
+          type: integer
+          description: 뱃지 고유 번호
+          example: 1
+        badgesName:
+          type: string
+          description: 뱃지 이름
+          example: "새싹 주민"
+        badgesDescription:
+          type: string
+          description: 뱃지 설명
+          example: "커뮤니티에 처음 가입한 주민"
+    
+    CreateBadgeRequest:
+      type: object
+      required:
+        - badgesName
+        - badgesDescription
+      properties:
+        badgesName:
+          type: string
+          description: 뱃지 이름
+          example: "성장 주민"
+        badgesDescription:
+          type: string
+          description: "게시물을 1개 이상 작성한 주민"
   
   # === 콘텐츠 스키마 ===
     Content:
@@ -388,8 +421,8 @@ components:
             $ref: '#/components/schemas/SearchUserResult'
         contents:
           type: array
-          items:
-            $ref: '#/components/schemas/SearchContentResult'
+            items:
+              $ref: '#/components/schemas/SearchContentResult'
 
 # === 응원 통계 스키마 ===
     SupportStats:
@@ -419,15 +452,6 @@ components:
           type: integer
           description: 받은 응원 수
           example: 1250
-
-
-
-
-
-
-
-
-
 
 paths:
   # === 인증 API ===
@@ -622,6 +646,161 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  
+  # === 뱃지 API ===
+  /api/badges/me:
+    get:
+      summary: 내 뱃지 목록 조회
+      description: 현재 로그인한 사용자가 획득한 뱃지 목록을 조회합니다.
+      tags:
+        - 뱃지
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 내 뱃지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Badge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/badges/user/{userNum}:
+    get:
+      summary: 특정 사용자의 뱃지 목록 조회
+      description: 사용자 번호로 해당 사용자가 획득한 뱃지 목록을 조회합니다.
+      tags:
+        - 뱃지
+      parameters:
+        - in: path
+          name: userNum
+          required: true
+          schema:
+            type: integer
+          description: 조회할 사용자의 번호
+          example: 1
+      responses:
+        '200':
+          description: 사용자 뱃지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Badge'
+        '404':
+          description: 사용자를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/badges:
+    get:
+      summary: 모든 뱃지 목록 조회 (관리자)
+      description: 시스템에 등록된 모든 뱃지 목록을 조회합니다.
+      tags:
+        - 뱃지
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 모든 뱃지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Badge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      summary: 뱃지 생성 (관리자)
+      description: 새로운 뱃지를 시스템에 추가합니다.
+      tags:
+        - 뱃지
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBadgeRequest'
+      responses:
+        '201':
+          description: 뱃지 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Badge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/badges/{badgesNum}:
+    put:
+      summary: 뱃지 수정 (관리자)
+      description: 기존 뱃지의 정보를 수정합니다.
+      tags:
+        - 뱃지
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: badgesNum
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBadgeRequest'
+      responses:
+        '200':
+          description: 뱃지 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Badge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: 뱃지를 찾을 수 없음
+
+    delete:
+      summary: 뱃지 삭제 (관리자)
+      description: 시스템에서 뱃지를 삭제합니다.
+      tags:
+        - 뱃지
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: badgesNum
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 뱃지 삭제 성공
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: 뱃지를 찾을 수 없음
 
 # === 콘텐츠 API ===
   /api/contents:

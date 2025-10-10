@@ -1,4 +1,5 @@
 const contentModel = require('../models/contentModel');
+const badgeService = require('./badgeService');
 
 exports.getAllContents = async ({ sort, limit, offset }) => {
     try {
@@ -66,6 +67,12 @@ exports.insertContent = async (contentData) => {
     // contentData 는 객체
     try {
         const newContent = await contentModel.insertContent(contentData);
+
+        // 콘텐츠 생성 후, 뱃지 획득 조건 확인
+        if (newContent && contentData.userNum) {
+            await badgeService.updateUserBadges(contentData.userNum);
+        }
+
         return newContent;
     } catch (error) {
         throw new Error(`컨텐츠 생성 실패 : ${error.message}`);

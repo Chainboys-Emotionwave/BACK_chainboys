@@ -13,6 +13,13 @@ INSERT INTO category (cateName) VALUES
 ('댄스'),
 ('커버');
 
+INSERT INTO badges (badgesNum, badgesName, badgesDescription) VALUES
+(1, '새싹 주민', '커뮤니티에 처음 가입한 주민'),
+(2, '성장 주민', '게시물을 1개 이상 작성한 주민'),
+(3, '성숙 주민', '게시물을 5개 이상 작성한 주민'),
+(4, '명예 주민', '게시물을 10개 이상 작성한 주민'),
+(5, '빌리지 마스터', '게시물을 50개 이상 작성한 주민');
+
 
 
 select * from challenges;
@@ -28,3 +35,7 @@ select * from users;
 select * from adViews;
 
 select * from rewards;
+
+select * from badges;
+
+select * from userBadges;
