@@ -9,18 +9,12 @@ const authService = require('./services/authService');
     
     // const walletAddress = wallet.address;
 
-    // 기존 관리자
-    // const walletAddress = '0x871c87FBfA6367c78B664e533Ee90CCf68039Feb';
-
     // hardhat 관리자
     const walletAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
     console.log("새로운 지갑 주소 (공개키):", walletAddress);
 
     // const privateKey = wallet.privateKey;
-
-    // 기존 관리자
-    // const privateKey = '0xeccd5e581327131d83822b64bf24b4149ac13d6e60dfffd372647d573d798ca1';
 
     //hardhat 관리자
     const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'

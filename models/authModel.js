@@ -11,7 +11,7 @@ exports.findByWalletAddress = async (userWalletAddress) => {
 
 
 exports.createUser = async (userWalletAddress, userNonce) => {
-    await db.query(
+    const [result] = await db.query(
         'INSERT INTO users(userWalletAddress, userName, userNonce) VALUES (?, ?, ?)',
         [userWalletAddress, userWalletAddress.substring(3,10), userNonce]
     );
