@@ -31,7 +31,7 @@ class SupportBlockchainService {
                 supporters,
                 amounts,
                 timestamp,
-                { gasLimit: 1000000 }
+                { gasLimit: 5000000 }
             );
 
             const receipt = await tx.wait();

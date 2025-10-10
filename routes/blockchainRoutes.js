@@ -10,7 +10,7 @@ router.get('/transaction/:txHash', blockchainController.getTransactionStatus);
 
 // 챌린지 관련 블록체인 기능
 router.post('/challenge/:challNum/deposit', auth, blockchainController.depositChallengePrize);
-router.post('/challenge/:challNum/distribute', auth, blockchainController.distributeChallengePrize);
+router.get('/challenge/:challNum/distribute', auth, blockchainController.distributeChallengePrize);
 router.get('/challenge/:challNum/info', blockchainController.getChallengeBlockchainInfo);
 
 // 응원 관련 블록체인 기능

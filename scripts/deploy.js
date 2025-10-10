@@ -10,7 +10,8 @@ async function main() {
   await challenge.waitForDeployment();
   console.log(`Challenge deployed to: ${challenge.target}`);
 
-  const Support = await hre.ethers.getContractFactory("Support");
+  // const Support = await hre.ethers.getContractFactory("Support");
+  const Support = await hre.ethers.getContractFactory("contracts/Support.sol:Support");
   const support = await Support.deploy();
   await support.waitForDeployment();
   console.log(`Support deployed to: ${support.target}`);
