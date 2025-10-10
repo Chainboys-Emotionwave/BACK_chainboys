@@ -20,3 +20,7 @@ select * from challenges;
 select * from contents;
 
 select * from category;
+
+select * from supports;
+
+select * from users;

@@ -2,6 +2,7 @@ const blockchainService = require('./blockchainService');
 const challengeModel = require('../models/challengeModel');
 const contentModel = require('../models/contentModel');
 const userModel = require('../models/userModel');
+const rewardService = require('./rewardService');
 const { ethers } = require('ethers');
 const { DEFAULT_PRIZE_DISTRIBUTION } = require('../config/blockchain');
 
@@ -150,16 +151,20 @@ class ChallengeBlockchainService {
                 distributedAt: new Date()
             });
 
+            // 🎯 보상 기록 생성 - 챌린지 분배 시 수상자들에게 보상 기록
+            const rewardResult = await rewardService.recordChallengeRewards(challNum, winners, amounts);
+
             return {
                 success: true,
                 txHash: tx.hash,
                 blockNumber: receipt.blockNumber,
                 gasUsed: receipt.gasUsed.toString(),
-                winners: winners.map((userNum, index) => ({
-                    userNum,
+                winners: winners.map((walletAddress, index) => ({
+                    walletAddress,
                     rank: index + 1,
                     amount: ethers.formatEther(amounts[index])
-                }))
+                })),
+                rewards: rewardResult.rewards // 추가된 보상 기록 정보
             };
         } catch (error) {
             throw new Error(`상금 분배 실패: ${error.message}`);

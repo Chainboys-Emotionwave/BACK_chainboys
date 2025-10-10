@@ -17,6 +17,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const pagesRoutes = require('./routes/pagesRoutes');
 const blockchainRoutes = require('./routes/blockchainRoutes');
+const rewardRoutes = require('./routes/rewardRoutes');
 
 // ✨ CORS 설정 - Swagger UI 호환성 개선
 app.use((req, res, next) => {
@@ -56,6 +57,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/supports',supportRoutes);
 app.use('/api/pages', pagesRoutes);
 app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/rewards', rewardRoutes);
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`서버가 http://0.0.0.0:${port} 에서 실행중입니다.`);
