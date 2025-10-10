@@ -28,7 +28,7 @@ exports.getTotalRankingStats = async () => {
     }
 };
 
-// 주간 랭킹 조회 (상위 N위)
+// 주간 랭킹 조회 (상위 N위) - 콘텐츠 수 포함
 exports.getWeeklyRanking = async (limit) => {
     try {
         const sql = `
@@ -38,13 +38,14 @@ exports.getWeeklyRanking = async (limit) => {
                 u.profileImageNum,
                 u.profileImageBackNum,
                 COUNT(s.supNum) AS weeklySupports,
-                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum) as contentCount,
+                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
             FROM users u
             LEFT JOIN supports s ON u.userNum = s.receiverNum 
                 AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
             HAVING COUNT(s.supNum) > 0
-            ORDER BY weeklySupports DESC
+            ORDER BY weeklySupports DESC, u.userNum ASC
             LIMIT ?
         `;
         const [rows] = await db.query(sql, [limit]);
@@ -54,7 +55,7 @@ exports.getWeeklyRanking = async (limit) => {
     }
 };
 
-// 전체 랭킹 조회 (상위 N위)
+// 전체 랭킹 조회 (상위 N위) - 콘텐츠 수 포함
 exports.getTotalRanking = async (limit) => {
     try {
         const sql = `
@@ -64,12 +65,13 @@ exports.getTotalRanking = async (limit) => {
                 u.profileImageNum,
                 u.profileImageBackNum,
                 COUNT(s.supNum) AS totalSupports,
-                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum) as contentCount,
+                ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
             FROM users u
             LEFT JOIN supports s ON u.userNum = s.receiverNum
             GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
             HAVING COUNT(s.supNum) > 0
-            ORDER BY totalSupports DESC
+            ORDER BY totalSupports DESC, u.userNum ASC
             LIMIT ?
         `;
         const [rows] = await db.query(sql, [limit]);
@@ -79,45 +81,53 @@ exports.getTotalRanking = async (limit) => {
     }
 };
 
-// 사용자 개인 랭킹 통계 조회
+// 사용자 개인 랭킹 통계 조회 (null 반환 문제 해결)
 exports.getUserRankingStats = async (userNum) => {
     try {
         // 사용자의 총/주간 응원 수 및 순위 조회
         const [totalStats, weeklyStats] = await Promise.all([
             // 총 순위 및 응원 수
             db.query(`
-                SELECT ranking, totalSupports FROM (
-                    SELECT receiverNum, COUNT(supNum) AS totalSupports,
-                           ROW_NUMBER() OVER (ORDER BY COUNT(supNum) DESC) as ranking
-                    FROM supports
-                    GROUP BY receiverNum
-                ) ranked_users
-                WHERE receiverNum = ?
+                SELECT r.ranking, r.totalSupports
+                FROM (
+                    SELECT 
+                        u.userNum,
+                        COUNT(s.supNum) AS totalSupports,
+                        RANK() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    FROM users u
+                    LEFT JOIN supports s ON u.userNum = s.receiverNum
+                    GROUP BY u.userNum
+                ) r
+                WHERE r.userNum = ?
             `, [userNum]),
             
             // 주간 순위 및 응원 수
             db.query(`
-                SELECT ranking, weeklySupports FROM (
-                    SELECT receiverNum, COUNT(supNum) AS weeklySupports,
-                           ROW_NUMBER() OVER (ORDER BY COUNT(supNum) DESC) as ranking
-                    FROM supports
-                    WHERE supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                    GROUP BY receiverNum
-                ) ranked_users
-                WHERE receiverNum = ?
+                SELECT r.ranking, r.weeklySupports
+                FROM (
+                    SELECT 
+                        u.userNum,
+                        COUNT(s.supNum) AS weeklySupports,
+                        RANK() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    FROM users u
+                    LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    GROUP BY u.userNum
+                ) r
+                WHERE r.userNum = ?
             `, [userNum])
         ]);
 
         return {
             totalRank: totalStats[0].length > 0 ? totalStats[0][0].ranking : null,
-            totalSupports: totalStats[0].length > 0 ? totalStats[0][0].totalSupports : 0,
+            totalSupports: totalStats[0].length > 0 ? Number(totalStats[0][0].totalSupports) : 0,
             weeklyRank: weeklyStats[0].length > 0 ? weeklyStats[0][0].ranking : null,
-            weeklySupports: weeklyStats[0].length > 0 ? weeklyStats[0][0].weeklySupports : 0
+            weeklySupports: weeklyStats[0].length > 0 ? Number(weeklyStats[0][0].weeklySupports) : 0
         };
     } catch (error) {
         throw new Error('사용자 랭킹 통계 조회 실패 : ' + error.message);
     }
 };
+
 
 // 카테고리별 통계 조회
 exports.getCategoryStats = async () => {
@@ -156,8 +166,8 @@ exports.getWeeklyRankingWithDetails = async (limit, cateNum) => {
                     u.profileImageNum,
                     u.profileImageBackNum,
                     COUNT(s.supNum) AS weeklySupports,
-                    COUNT(DISTINCT con.conNum) AS contentCount,
-                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum AND cateNum = ?) as contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
                 FROM users u
                 LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
                 LEFT JOIN supports s ON u.userNum = s.receiverNum 
@@ -165,10 +175,10 @@ exports.getWeeklyRankingWithDetails = async (limit, cateNum) => {
                     AND s.conNum = con.conNum
                 GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
                 HAVING COUNT(s.supNum) > 0
-                ORDER BY weeklySupports DESC
+                ORDER BY weeklySupports DESC, u.userNum ASC
                 LIMIT ?
             `;
-            queryParams = [cateNum, limit];
+            queryParams = [cateNum, cateNum, limit];
         } else {
             // 전체 카테고리: 모든 응원 계산
             sql = `
@@ -178,16 +188,14 @@ exports.getWeeklyRankingWithDetails = async (limit, cateNum) => {
                     u.profileImageNum,
                     u.profileImageBackNum,
                     COUNT(s.supNum) AS weeklySupports,
-                    COUNT(DISTINCT con.conNum) AS contentCount,
-                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum) as contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
                 FROM users u
-                LEFT JOIN contents con ON u.userNum = con.userNum
                 LEFT JOIN supports s ON u.userNum = s.receiverNum 
                     AND s.supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                    AND s.conNum = con.conNum
                 GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
                 HAVING COUNT(s.supNum) > 0
-                ORDER BY weeklySupports DESC
+                ORDER BY weeklySupports DESC, u.userNum ASC
                 LIMIT ?
             `;
             queryParams = [limit];
@@ -214,17 +222,17 @@ exports.getTotalRankingWithDetails = async (limit, cateNum) => {
                     u.profileImageNum,
                     u.profileImageBackNum,
                     COUNT(s.supNum) AS totalSupports,
-                    COUNT(DISTINCT con.conNum) AS contentCount,
-                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum AND cateNum = ?) as contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
                 FROM users u
                 LEFT JOIN contents con ON u.userNum = con.userNum AND con.cateNum = ?
                 LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
                 GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
                 HAVING COUNT(s.supNum) > 0
-                ORDER BY totalSupports DESC
+                ORDER BY totalSupports DESC, u.userNum ASC
                 LIMIT ?
             `;
-            queryParams = [cateNum, limit];
+            queryParams = [cateNum, cateNum, limit];
         } else {
             // 전체 카테고리: 모든 응원 계산
             sql = `
@@ -234,14 +242,13 @@ exports.getTotalRankingWithDetails = async (limit, cateNum) => {
                     u.profileImageNum,
                     u.profileImageBackNum,
                     COUNT(s.supNum) AS totalSupports,
-                    COUNT(DISTINCT con.conNum) AS contentCount,
-                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC) as ranking
+                    (SELECT COUNT(*) FROM contents WHERE userNum = u.userNum) as contentCount,
+                    ROW_NUMBER() OVER (ORDER BY COUNT(s.supNum) DESC, u.userNum ASC) as ranking
                 FROM users u
-                LEFT JOIN contents con ON u.userNum = con.userNum
-                LEFT JOIN supports s ON u.userNum = s.receiverNum AND s.conNum = con.conNum
+                LEFT JOIN supports s ON u.userNum = s.receiverNum
                 GROUP BY u.userNum, u.userName, u.profileImageNum, u.profileImageBackNum
                 HAVING COUNT(s.supNum) > 0
-                ORDER BY totalSupports DESC
+                ORDER BY totalSupports DESC, u.userNum ASC
                 LIMIT ?
             `;
             queryParams = [limit];
