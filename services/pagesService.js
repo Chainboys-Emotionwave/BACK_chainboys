@@ -216,3 +216,38 @@ exports.getMyCollectionPageData = async (userNum) => {
         throw new Error('내 집 페이지 데이터 조회 실패: ' + error.message);
     }
 };
+
+// 창작자 프로필 페이지 데이터 조회
+exports.getCreatorProfilePageData = async (userNum) => {
+    try {
+        const [
+            user,
+            supportStats,
+            contents,
+            badges
+        ] = await Promise.all([
+            userModel.findByUserNum(userNum),
+            pagesModel.getCreatorSupportStats(userNum),
+            pagesModel.getUserContentsForCollection(userNum), // 콘텐츠 목록 조회 재사용
+            badgeModel.findUserBadges(userNum)
+        ]);
+
+        // 사용자가 없는 경우를 대비
+        if (!user) {
+            return { user: null };
+        }
+
+        return {
+            user,
+            stats: {
+                weeklySupports: supportStats.weeklySupports,
+                totalSupports: supportStats.totalSupports,
+                contentCount: contents ? contents.length : 0,
+            },
+            contents,
+            badges
+        };
+    } catch (error) {
+        throw new Error('창작자 프로필 데이터 조회 실패: ' + error.message);
+    }
+};

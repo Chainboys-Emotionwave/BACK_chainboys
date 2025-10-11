@@ -511,3 +511,18 @@ exports.getActiveFestivalsForHome = async () => {
         throw new Error('홈 페이지 진행 중인 축제 조회 실패: ' + error.message);
     }
 };
+
+// 창작자의 주간/전체 응원 수 조회
+exports.getCreatorSupportStats = async (userNum) => {
+    try {
+        const sql = `
+            SELECT
+                (SELECT COUNT(supNum) FROM supports WHERE receiverNum = ? AND supDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS weeklySupports,
+                (SELECT COUNT(supNum) FROM supports WHERE receiverNum = ?) AS totalSupports;
+        `;
+        const [rows] = await db.query(sql, [userNum, userNum]);
+        return rows[0] || { weeklySupports: 0, totalSupports: 0 };
+    } catch (error) {
+        throw new Error('창작자 응원 통계 조회 실패: ' + error.message);
+    }
+};

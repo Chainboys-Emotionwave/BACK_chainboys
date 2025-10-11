@@ -5,16 +5,22 @@ const authService = require('./services/authService');
 // 즉시 실행 함수를 사용하여 비동기 로직 실행
 (async () => {
     // 1. 무작위로 새로운 지갑 생성
-    const wallet = ethers.Wallet.createRandom();
+    // const wallet = ethers.Wallet.createRandom();
     
-    const walletAddress = wallet.address;
+    // const walletAddress = wallet.address;
+
+    // 기존 유저
+    const walletAddress = '0xba3e1794371B9e42a7d17Bdb4B07b520137483A7';
 
     // hardhat 관리자
     // const walletAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
     console.log("새로운 지갑 주소 (공개키):", walletAddress);
 
-    const privateKey = wallet.privateKey;
+    // const privateKey = wallet.privateKey;
+
+    // 기존 유저
+    const privateKey = '0x81be6ef99c2bfe4110131d3f51123486175ac57a46aea2fc98b7e1c7e379efbf'
 
     //hardhat 관리자
     // const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
@@ -25,7 +31,7 @@ const authService = require('./services/authService');
     const message = await authService.generateSignatureMessage(walletAddress);
     console.log(message);
 
-    // const wallet = new ethers.Wallet(privateKey);
+    const wallet = new ethers.Wallet(privateKey);
 
     // 3. 지갑을 사용하여 메시지 서명
     const signature = await wallet.signMessage(message);

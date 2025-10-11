@@ -19,4 +19,7 @@ router.get('/festival/:challNum', pagesController.getFestivalDetailData);
 // 내 집 페이지(컬렉션) 통합 데이터
 router.get('/collection', auth, pagesController.getMyCollectionPageData);
 
+// 창작자 프로필 페이지 통합 데이터
+router.get('/creator/:userNum', pagesController.getCreatorProfilePageData);
+
 module.exports = router;

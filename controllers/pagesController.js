@@ -105,3 +105,22 @@ exports.getMyCollectionPageData = async (req, res) => {
         res.status(500).send('서버 오류 : ' + error.message);
     }
 };
+
+// 창작자 프로필 페이지 데이터 조회
+exports.getCreatorProfilePageData = async (req, res) => {
+    try {
+        const { userNum } = req.params;
+        const creatorProfileData = await pagesService.getCreatorProfilePageData(userNum);
+        
+        if (!creatorProfileData.user) {
+            return res.status(404).json({ message: '해당 창작자를 찾을 수 없습니다.' });
+        }
+
+        res.status(200).json({
+            message: '창작자 프로필 데이터 조회 성공',
+            data: creatorProfileData
+        });
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
