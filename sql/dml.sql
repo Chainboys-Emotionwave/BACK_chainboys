@@ -30,7 +30,7 @@
 -- (5,1);
 
 -- UPDATE users set role = "admin" where userNum=1;
--- UPDATE challenges set challEndDate = "2025-08-31" where challNum=2;
+UPDATE challenges set challEndDate = "2025-12-31" where challNum=2;
 
 select * from challenges;
 

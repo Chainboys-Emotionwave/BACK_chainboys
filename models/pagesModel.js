@@ -357,3 +357,157 @@ exports.getFestivalParticipatingContents = async (challNum) => {
         throw new Error('축제 참여 콘텐츠 조회 실패 : ' + error.message);
     }
 };
+
+// 내 집 페이지(컬렉션)를 위한 사용자 프로필 및 통계 조회
+exports.getUserProfileForCollection = async (userNum) => {
+    try {
+        const sql = `
+            SELECT
+                u.userName,
+                u.userWalletAddress,
+                u.profileImageNum,
+                u.profileImageBackNum,
+                (SELECT COALESCE(SUM(rewardAmount), 0) FROM rewards WHERE userNum = u.userNum) AS totalReward,
+                (SELECT COUNT(supNum) FROM supports WHERE receiverNum = u.userNum) AS totalSupports,
+                (SELECT COUNT(badgesNum) FROM userBadges WHERE userNum = u.userNum) AS totalBadges
+            FROM
+                users u
+            WHERE
+                u.userNum = ?;
+        `;
+        const [rows] = await db.query(sql, [userNum]);
+        // COALESCE와 COUNT는 항상 행을 반환하므로, rows[0]가 없을 경우를 대비해 null 반환
+        return rows[0] || null;
+    } catch (error) {
+        throw new Error('컬렉션용 프로필 조회 실패: ' + error.message);
+    }
+};
+
+// 내 집 페이지(컬렉션)를 위한 사용자 콘텐츠 목록 조회
+exports.getUserContentsForCollection = async (userNum) => {
+    try {
+        const sql = `
+            SELECT
+                c.*,
+                cat.cateName
+            FROM
+                contents c
+            LEFT JOIN
+                category cat ON c.cateNum = cat.cateNum
+            WHERE
+                c.userNum = ?
+            ORDER BY
+                c.conDate DESC;
+        `;
+        const [rows] = await db.query(sql, [userNum]);
+        return rows;
+    } catch (error) {
+        throw new Error('컬렉션용 콘텐츠 조회 실패: ' + error.message);
+    }
+};
+
+// 내 집 페이지(컬렉션)를 위한 사용자 보상 내역 조회
+exports.getUserRewardsForCollection = async (userNum) => {
+    try {
+        const sql = `
+            SELECT
+                rewardTime,
+                rewardAmount,
+                rewardDescription
+            FROM
+                rewards
+            WHERE
+                userNum = ?
+            ORDER BY
+                rewardTime DESC;
+        `;
+        const [rows] = await db.query(sql, [userNum]);
+        return rows;
+    } catch (error) {
+        throw new Error('컬렉션용 보상 내역 조회 실패: ' + error.message);
+    }
+};
+
+// 홈 페이지를 위한 주간 콘텐츠 랭킹 조회 (상위 3개)
+exports.getWeeklyContentRankingForHome = async () => {
+    try {
+        const sql = `
+            SELECT
+                c.conTitle,
+                u.userName AS creatorName,
+                cat.cateName,
+                c.conSupports
+            FROM
+                contents c
+            JOIN
+                users u ON c.userNum = u.userNum
+            LEFT JOIN
+                category cat ON c.cateNum = cat.cateNum
+            WHERE
+                c.conDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ORDER BY
+                c.conSupports DESC
+            LIMIT 3;
+        `;
+        const [rows] = await db.query(sql);
+        return rows;
+    } catch (error) {
+        throw new Error('홈 페이지 주간 랭킹 조회 실패: ' + error.message);
+    }
+};
+
+// 홈 페이지를 위한 랜덤 콘텐츠 조회
+exports.getRandomContentsForHome = async (limit) => {
+    try {
+        const sql = `
+            SELECT
+                c.conTitle,
+                u.userName AS creatorName,
+                cat.cateName,
+                c.conDate,
+                c.conSupports
+            FROM
+                contents c
+            JOIN
+                users u ON c.userNum = u.userNum
+            LEFT JOIN
+                category cat ON c.cateNum = cat.cateNum
+            ORDER BY
+                RAND()
+            LIMIT ?;
+        `;
+        const [rows] = await db.query(sql, [limit]);
+        return rows;
+    } catch (error) {
+        throw new Error('홈 페이지 랜덤 콘텐츠 조회 실패: ' + error.message);
+    }
+};
+
+// 홈 페이지를 위한 진행 중인 축제 조회
+exports.getActiveFestivalsForHome = async () => {
+    try {
+        const sql = `
+            SELECT
+                c.challNum,
+                c.challName,
+                c.challEndDate,
+                c.challDescription,
+                c.challPrize,
+                COUNT(con.conNum) AS participantCount
+            FROM
+                challenges c
+            LEFT JOIN
+                contents con ON c.challNum = con.challNum
+            WHERE
+                NOW() BETWEEN c.challStartDate AND c.challEndDate
+            GROUP BY
+                c.challNum
+            ORDER BY
+                c.challEndDate ASC;
+        `;
+        const [rows] = await db.query(sql);
+        return rows;
+    } catch (error) {
+        throw new Error('홈 페이지 진행 중인 축제 조회 실패: ' + error.message);
+    }
+};

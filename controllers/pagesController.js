@@ -1,5 +1,19 @@
 const pagesService = require('../services/pagesService');
 
+// 홈 페이지 통합 데이터 조회
+exports.getHomePageData = async (req, res) => {
+    try {
+        const userNum = req.userData ? req.userData.userNum : null;
+        const homeData = await pagesService.getHomePageData(userNum);
+        res.status(200).json({
+            message: '홈 페이지 데이터 조회 성공',
+            data: homeData
+        });
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
+
 // 랭킹 페이지 통합 데이터 조회
 exports.getRankingPageData = async (req, res) => {
     try {
@@ -68,6 +82,24 @@ exports.getFestivalDetailData = async (req, res) => {
         res.status(200).json({
             message: '축제 상세 데이터 조회 성공',
             data: festivalDetailData
+        });
+    } catch (error) {
+        res.status(500).send('서버 오류 : ' + error.message);
+    }
+};
+
+// 내 집 페이지(컬렉션) 통합 데이터 조회
+exports.getMyCollectionPageData = async (req, res) => {
+    try {
+        const userNum = req.userData.userNum;
+        if (!userNum) {
+            return res.status(401).send('인증되지 않은 사용자입니다.');
+        }
+        const collectionData = await pagesService.getMyCollectionPageData(userNum);
+        
+        res.status(200).json({
+            message: '내 집 페이지 데이터 조회 성공',
+            data: collectionData
         });
     } catch (error) {
         res.status(500).send('서버 오류 : ' + error.message);
