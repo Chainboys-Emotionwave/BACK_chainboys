@@ -152,7 +152,7 @@ class ChallengeBlockchainService {
             });
 
             // 🎯 보상 기록 생성 - 챌린지 분배 시 수상자들에게 보상 기록
-            const rewardResult = await rewardService.recordChallengeRewards(challNum, winners, amounts);
+            const rewardResult = await rewardService.recordChallengeRewards(challNum, winners, amounts, challenge.challName);
 
             return {
                 success: true,

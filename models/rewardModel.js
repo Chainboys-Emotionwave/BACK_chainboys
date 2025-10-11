@@ -4,14 +4,14 @@ class RewardModel {
     // 보상 기록 생성
     async insertReward(rewardData) {
         try {
-            const { userNum, rewardAmount } = rewardData;
+            const { userNum, rewardAmount, rewardDescription } = rewardData;
             
             const query = `
-                INSERT INTO rewards (userNum, rewardAmount, rewardTime)
-                VALUES (?, ?, NOW())
+                INSERT INTO rewards (userNum, rewardAmount, rewardDescription, rewardTime)
+                VALUES (?, ?, ?, NOW())
             `;
             
-            const [result] = await db.query(query, [userNum, rewardAmount]);
+            const [result] = await db.query(query, [userNum, rewardAmount, rewardDescription]);
             return result.insertId;
         } catch (error) {
             throw new Error(`보상 기록 생성 실패: ${error.message}`);
@@ -26,7 +26,8 @@ class RewardModel {
                     rewardNum,
                     rewardAmount,
                     rewardTime,
-                    userNum
+                    userNum,
+                    rewardDescription
                 FROM rewards 
                 WHERE userNum = ?
                 ORDER BY rewardTime DESC
@@ -85,6 +86,7 @@ class RewardModel {
                     r.rewardAmount,
                     r.rewardTime,
                     r.userNum,
+                    r.rewardDescription,
                     u.userName,
                     u.userWalletAddress
                 FROM rewards r
@@ -104,16 +106,14 @@ class RewardModel {
     // 챌린지 관련 보상 기록 생성 (추가 컬럼이 있다면 확장 가능)
     async insertChallengeReward(rewardData) {
         try {
-            const { userNum, rewardAmount, challNum } = rewardData;
+            const { userNum, rewardAmount, challNum, rewardDescription } = rewardData;
             
-            // 현재 rewards 테이블 구조에 맞춰 기본 정보만 저장
-            // 필요시 challNum을 저장할 컬럼을 추가할 수 있음
             const query = `
-                INSERT INTO rewards (userNum, rewardAmount, rewardTime)
-                VALUES (?, ?, NOW())
+                INSERT INTO rewards (userNum, rewardAmount, rewardDescription, rewardTime)
+                VALUES (?, ?, ?, NOW())
             `;
             
-            const [result] = await db.query(query, [userNum, rewardAmount]);
+            const [result] = await db.query(query, [userNum, rewardAmount, rewardDescription]);
             return result.insertId;
         } catch (error) {
             throw new Error(`챌린지 보상 기록 생성 실패: ${error.message}`);

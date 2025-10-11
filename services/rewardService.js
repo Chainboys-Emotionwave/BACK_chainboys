@@ -4,7 +4,7 @@ const authModel = require('../models/authModel');
 
 class RewardService {
     // 챌린지 상금 분배 시 보상 기록 생성
-    async recordChallengeRewards(challNum, winners, amounts) {
+    async recordChallengeRewards(challNum, winners, amounts, challName) {
         try {
             const recordedRewards = [];
             
@@ -33,7 +33,8 @@ class RewardService {
                 const rewardId = await rewardModel.insertChallengeReward({
                     userNum: user.userNum,
                     rewardAmount: amountEther,
-                    challNum: challNum
+                    challNum: challNum,
+                    rewardDescription: challName // 챌린지 이름 추가
                 });
 
                 recordedRewards.push({
@@ -42,7 +43,8 @@ class RewardService {
                     userName: user.userName,
                     walletAddress,
                     rank: i + 1,
-                    amount: amountEther
+                    amount: amountEther,
+                    rewardDescription: challName
                 });
             }
 
@@ -120,7 +122,8 @@ class RewardService {
         try {
             const rewardId = await rewardModel.insertReward({
                 userNum,
-                rewardAmount
+                rewardAmount,
+                rewardDescription: description
             });
 
             return {

@@ -127,4 +127,4 @@ ALTER TABLE challenges ADD COLUMN distributionBlockNumber BIGINT;
 ALTER TABLE challenges ADD COLUMN prizeDistribution JSON;
 ALTER TABLE challenges ADD COLUMN blockchainStatus ENUM('created', 'distributed', 'failed') DEFAULT 'created';
 ALTER TABLE challenges ADD COLUMN distributedAt TIMESTAMP NULL;
-
+ALTER TABLE rewards ADD COLUMN rewardDescription VARCHAR(255) NULL;

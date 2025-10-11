@@ -32,20 +32,20 @@
 -- UPDATE users set role = "admin" where userNum=1;
 -- UPDATE challenges set challEndDate = "2025-08-31" where challNum=2;
 
--- select * from challenges;
+select * from challenges;
 
--- select * from contents;
+select * from contents;
 
--- select * from category;
+select * from category;
 
--- select * from supports;
+select * from supports;
 
--- select * from users;
+select * from users;
 
--- select * from adViews;
+select * from adViews;
 
--- select * from rewards;
+select * from rewards;
 
--- select * from badges;
+select * from badges;
 
--- select * from userBadges;
+select * from userBadges;
